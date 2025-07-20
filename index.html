@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Metadata Editor</title>
+<script src="https://cdn.jsdelivr.net/npm/piexifjs"></script>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+  input, textarea, button { margin: 5px 0; width: 100%; }
+  img { max-width: 100%; margin-top: 10px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<h2>Image Metadata Editor</h2>
+<input type="file" id="imageInput" accept="image/*"><br>
+<textarea id="metadataView" rows="10" placeholder="Metadata will appear here..."></textarea><br>
+<button id="applyChanges">Apply Changes & Download</button>
+<img id="preview" class="hidden">
+
+<script>
+let imageData = null;
+
+document.getElementById('imageInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        imageData = event.target.result;
+        const exif = piexif.load(imageData);
+        document.getElementById('metadataView').value = JSON.stringify(exif, null, 2);
+        document.getElementById('preview').src = imageData;
+        document.getElementById('preview').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('applyChanges').addEventListener('click', () => {
+    try {
+        const exifData = JSON.parse(document.getElementById('metadataView').value);
+        const exifBytes = piexif.dump(exifData);
+        const newData = piexif.insert(exifBytes, imageData);
+
+        const a = document.createElement('a');
+        a.href = newData;
+        a.download = "edited_image.jpg";
+        a.click();
+    } catch (err) {
+        alert("Invalid metadata format! Make sure it's valid JSON.");
+    }
+});
+</script>
+</body>
+</html>
